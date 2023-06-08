@@ -81,7 +81,7 @@ const ShareButton = ({
   const anchor = buttonRef && buttonRef.current;
   const url =  new URL(window.location.href);
 
-  url.searchParams.set('code', btoa(code));
+  url.searchParams.set('code', btoa(encodeURIComponent(code)));
 
   const handleOpen = () => {
     setOpen(true);
