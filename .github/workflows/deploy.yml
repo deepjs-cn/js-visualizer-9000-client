@@ -1,0 +1,61 @@
+name: CI
+
+env:
+  # 7 GiB by default on GitHub, setting to 6 GiB
+  # https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners#supported-runners-and-hardware-resources
+  NODE_OPTIONS: --max-old-space-size=6144
+
+on:
+  push:
+    branches:
+      - master
+      - main
+  pull_request:
+    paths-ignore:
+      - '**.md'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.number || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    # 添加 github action 写权限
+    # https://www.yuque.com/cloudyan/faq/zwk7e2fgh1ggo8wy
+    permissions:
+      contents: write
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    name: 'env: node-12, ubuntu-latest'
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+        # with:
+        #   fetch-depth: 0
+
+      # https://github.com/withastro/astro/blob/main/.github/workflows/ci.yml
+      # - name: Setup PNPM
+      #   uses: pnpm/action-setup@v2.2.1
+
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 12
+          cache: 'yarn' # npm, yarn or pnpm
+
+      - name: Install dependencies
+        # run: npm ci # --prefer-offline # npm ci or yarn
+        # run: yarn install --frozen-lockfile # npm ci or yarn
+        run: yarn # --frozen-lockfile
+
+      - name: Build
+        run: npm run build
+
+      # 参考：https://github.com/peaceiris/actions-gh-pages
+      # - name: Deploy
+      #   run: npm run deploy
+      - name: Deploy
+        uses: peaceiris/actions-gh-pages@v3 # 开源 actions 用于部署
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN}} # GitHub 读写仓库的权限token，自动生成无需关心
+          publish_dir: build # 推送到 gh-pages 分支
